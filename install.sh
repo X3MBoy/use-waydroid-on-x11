@@ -73,14 +73,19 @@ initialize_waydroid() {
     echo "2) GApps (With Google Apps)"
     read -rp "Enter your choice (1 or 2): " choice
 
+    OTA_ARGS=""
+    if [ "$PKG_MANAGER" = "dnf" ]; then
+        OTA_ARGS="-c https://ota.waydro.id/system -v https://ota.waydro.id/vendor"
+    fi
+
     case $choice in
         1)
             echo "Initializing Waydroid without Google Apps..."
-            sudo waydroid init
+            sudo waydroid init $OTA_ARGS
             ;;
         2)
             echo "Initializing Waydroid with Google Apps..."
-            sudo waydroid init -f -s GAPPS
+            sudo waydroid init -f -s GAPPS $OTA_ARGS
             ;;
         *)
             echo "Invalid choice. Please run the script again."
