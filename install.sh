@@ -92,7 +92,7 @@ initialize_waydroid() {
 # Function to configure additional settings
 configure_additional_settings() {
     echo "Configuring clipboard integration..."
-    sudo pip3 install pyclip
+    pip3 install pyclip
 
     echo "Creating Weston configuration..."
     mkdir -p ~/.config
