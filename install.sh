@@ -4,6 +4,31 @@
 
 set -e
 
+# Function to check distro
+check_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO_ID=$ID
+    else
+        DISTRO_ID=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
+    fi
+
+    case "$DISTRO_ID" in
+        ubuntu|debian|linuxmint|pop|kali)
+            PKG_MANAGER="apt"
+            ;;
+        fedora|centos|rhel|almalinux|rocky)
+            PKG_MANAGER="dnf"
+            ;;
+        *)
+            echo "Unsupported distribution: $DISTRO_ID"
+            exit 1
+            ;;
+    esac
+    echo "Detected distribution: $DISTRO_ID"
+    echo "Using package manager: $PKG_MANAGER"
+}
+
 # Function to check for root privileges
 check_root() {
     if [ "$EUID" -ne 0 ]; then
@@ -15,23 +40,30 @@ check_root() {
 # Function to install prerequisites
 install_prerequisites() {
     echo "Installing prerequisites..."
-    sudo apt update
-    sudo apt install -y curl ca-certificates python3-pip wl-clipboard
+    if [ "$PKG_MANAGER" = "apt" ]; then
+        sudo apt update
+        sudo apt install -y curl ca-certificates python3-pip wl-clipboard
+    elif [ "$PKG_MANAGER" = "dnf" ]; then
+        sudo dnf check-update || true
+        sudo dnf install -y curl ca-certificates python3-pip wl-clipboard
+    fi
 }
 
 # Function to install Weston
 install_weston() {
     echo "Installing Weston..."
-    sudo apt install -y weston
+    sudo $PKG_MANAGER install -y weston
 }
 
 # Function to install Waydroid
 install_waydroid() {
-    echo "Adding Waydroid repository..."
-    curl https://repo.waydro.id | sudo bash
+    if [ "$PKG_MANAGER" = "apt" ]; then
+        echo "Adding Waydroid repository..."
+        curl https://repo.waydro.id | sudo bash
+    fi
 
     echo "Installing Waydroid..."
-    sudo apt install -y waydroid
+    sudo $PKG_MANAGER install -y waydroid
 }
 
 # Function to initialize Waydroid
@@ -108,6 +140,7 @@ EOF'
 # Main script execution
 main() {
     check_root
+    check_distro
     install_prerequisites
     install_weston
     install_waydroid
