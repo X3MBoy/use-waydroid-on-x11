@@ -1,7 +1,34 @@
 #!/bin/bash
 
-# Waydroid and Weston Uninstallation Script for Ubuntu-based Systems
+# Waydroid and Weston Uninstallation Script
 # This script will remove Waydroid, Weston, associated packages, and custom desktop files and configuration directories.
+
+# Function to check distro
+check_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO_ID=$ID
+    else
+        DISTRO_ID=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
+    fi
+
+    case "$DISTRO_ID" in
+        ubuntu|debian|linuxmint|pop|kali)
+            PKG_MANAGER="apt"
+            ;;
+        fedora|centos|rhel|almalinux|rocky)
+            PKG_MANAGER="dnf"
+            ;;
+        *)
+            echo "Unsupported distribution: $DISTRO_ID"
+            exit 1
+            ;;
+    esac
+    echo "Detected distribution: $DISTRO_ID"
+    echo "Using package manager: $PKG_MANAGER"
+}
+
+check_distro
 
 echo "Starting Waydroid and Weston uninstallation..."
 
@@ -10,12 +37,17 @@ sudo systemctl stop waydroid-container
 sudo systemctl disable waydroid-container
 
 # Remove Waydroid package and its dependencies
-sudo apt purge -y waydroid
-sudo apt autoremove -y
-
-# Remove Weston package and its dependencies
-sudo apt purge -y weston
-sudo apt autoremove -y
+if [ "$PKG_MANAGER" = "apt" ]; then
+    sudo apt purge -y waydroid
+    sudo apt autoremove -y
+    sudo apt purge -y weston
+    sudo apt autoremove -y
+elif [ "$PKG_MANAGER" = "dnf" ]; then
+    sudo dnf remove -y waydroid
+    sudo dnf autoremove -y
+    sudo dnf remove -y weston
+    sudo dnf autoremove -y
+fi
 
 # Delete user configuration and cache related to Waydroid
 rm -rf ~/.config/waydroid
